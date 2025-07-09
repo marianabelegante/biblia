@@ -9,9 +9,28 @@ class StudyService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
+  /// Fetches all saved studies for the currently authenticated user.
+  Future<List<Study>> getSavedStudies() async {
+    final user = _auth.currentUser;
+    if (user == null) {
+      throw 'Usuário não autenticado.';
+    }
+
+    try {
+      final querySnapshot = await _firestore
+          .collection('studies')
+          .doc(user.uid)
+          .collection('user_studies')
+          .orderBy('createdAt', descending: true) // Order by most recent
+          .get();
+      
+      return querySnapshot.docs.map((doc) => Study.fromFirestore(doc)).toList();
+    } catch (e) {
+      throw 'Erro ao buscar os estudos salvos.';
+    }
+  }
+
   /// Generates a Bible study for a given verse using the OpenAI API.
-  ///
-  /// [fullVerseText]: The complete verse text, e.g., "João 3:16 — Porque Deus amou...".
   Future<String> generateStudy(String fullVerseText) async {
     final apiKey = dotenv.env['OPENAI_API_KEY'];
     if (apiKey == null || apiKey.isEmpty) {
@@ -56,14 +75,11 @@ class StudyService {
         throw 'Erro na API da OpenAI: ${errorBody['error']['message']}';
       }
     } catch (e) {
-      // Rethrow custom or network errors.
       rethrow;
     }
   }
 
   /// Saves a generated study to Firestore for the current user.
-  ///
-  /// [study]: The [Study] object containing the verse, text, and timestamp.
   Future<void> saveStudy(Study study) async {
     final user = _auth.currentUser;
     if (user == null) {
@@ -71,6 +87,7 @@ class StudyService {
     }
 
     try {
+      // Create a new document with an auto-generated ID
       await _firestore
           .collection('studies')
           .doc(user.uid)

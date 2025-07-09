@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../controller/bible_controller.dart';
-import '../data/bible_data.dart'; // Import the new data file
+import '../data/bible_data.dart';
+import 'study_library_view.dart'; // Import the new library view
 
 class HomeView extends StatefulWidget {
   const HomeView({super.key});
@@ -21,6 +22,18 @@ class _HomeViewState extends State<HomeView> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Bíblia Sagrada'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.bookmark_border),
+            tooltip: 'Meus Estudos',
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const StudyLibraryView()),
+              );
+            },
+          ),
+        ],
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
