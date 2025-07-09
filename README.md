@@ -62,17 +62,13 @@ Execute com:
 
 ---
 
-# 📲 Requisitos
+## 📲 Requisitos
 
 - Android API 21 ou superior
 - Firebase configurado
 - Conexão com internet para IA e leitura bíblica
 
 ---
-
-# 👩‍💻 Desenvolvido por
-
-- Mariana Belegante
 
 ## 🖼️ Telas do App
 
@@ -98,5 +94,11 @@ Execute com:
 
 ### 💾 Biblioteca de Estudos Salvos
 <img src="assets/images/estudo_salvo.jpeg" width="300"/>
+
+---
+
+## 👩‍💻 Desenvolvido por
+
+- Mariana Belegante
 
 ---
