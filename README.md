@@ -48,17 +48,17 @@ OPENAI_API_KEY=sua_chave_openai_aqui
 
 ## ▶️ Como rodar o app localmente
 
-git clone (https://github.com/marianabelegante/biblia.git)
+- [git clone](https://github.com/marianabelegante/biblia.git)
 
-flutter pub get
+- flutter pub get
 
-- Crie o arquivo .env na raiz:
+Crie o arquivo .env na raiz:
 
-OPENAI_API_KEY=sua-chave-aqui
+- OPENAI_API_KEY=sua-chave-aqui
 
-- Execute com:
+Execute com:
 
-flutter run
+- flutter run
 
 ---
 
