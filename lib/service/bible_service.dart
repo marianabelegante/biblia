@@ -1,35 +1,37 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
-import '../model/bible_model.dart';
+import '../model/verse_model.dart';
 
 class BibleService {
-  final String _baseUrl = 'https://bible4u.net/api/v1/pt';
+  final String _baseUrl = 'https://bible-api.com';
 
-  // Busca a lista de livros
-  Future<List<Book>> getBooks() async {
-    final response = await http.get(Uri.parse('$_baseUrl/books'));
+  /// Fetches verses for a given Bible reference (e.g., "John 3:16" or "João 3").
+  ///
+  /// The [reference] is URI-encoded to handle spaces and special characters.
+  Future<List<Verse>> getVerses(String reference) async {
+    // Sanitize the reference by replacing spaces with '+'
+    final sanitizedReference = reference.trim().replaceAll(' ', '+');
+    final url = Uri.parse('$_baseUrl/$sanitizedReference?translation=almeida');
 
-    if (response.statusCode == 200) {
-      List<dynamic> body = jsonDecode(utf8.decode(response.bodyBytes));
-      return body.map((dynamic item) => Book.fromJson(item)).toList();
-    } else {
-      throw Exception('Falha ao carregar os livros');
-    }
-  }
+    try {
+      final response = await http.get(url);
 
-  // Busca os versículos de um capítulo específico
-  Future<List<Verse>> getVerses(String bookAbbrev, int chapter) async {
-    // A API parece usar o nome do livro em inglês na URL, então vamos ajustar
-    // Esta parte pode precisar de um mapeamento se os nomes não baterem.
-    // Para simplificar, vamos usar o nome do livro. A API pode ser flexível.
-    final response = await http.get(Uri.parse('$_baseUrl/$bookAbbrev/$chapter'));
-
-    if (response.statusCode == 200) {
-      Map<String, dynamic> body = jsonDecode(utf8.decode(response.bodyBytes));
-      List<dynamic> versesJson = body['verses'];
-      return versesJson.map((dynamic item) => Verse.fromJson(item)).toList();
-    } else {
-      throw Exception('Falha ao carregar os versículos');
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> data = json.decode(response.body);
+        final List<dynamic> versesJson = data['verses'];
+        return versesJson.map((json) => Verse.fromJson(json)).toList();
+      } else if (response.statusCode == 404) {
+        // Handle cases where the reference is not found
+        throw 'A referência "${reference.trim()}" não foi encontrada. Verifique e tente novamente.';
+      } else {
+        // Handle other server-side errors
+        throw 'Ocorreu um erro no servidor. Tente novamente mais tarde.';
+      }
+    } catch (e) {
+      // Handle network errors or other exceptions
+      // Re-throw the specific error from the logic above or a generic one.
+      if (e is String) rethrow;
+      throw 'Erro de conexão. Verifique sua internet e tente novamente.';
     }
   }
 }

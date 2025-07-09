@@ -3,34 +3,60 @@ import 'package:firebase_auth/firebase_auth.dart';
 class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
 
-  // Stream para ouvir o estado de autenticação
-  Stream<User?> get authStateChanges => _auth.authStateChanges();
-
-  // Obter usuário atual
-  User? get currentUser => _auth.currentUser;
-
-  // Login com e-mail e senha
-  Future<UserCredential?> signInWithEmailAndPassword(String email, String password) async {
+  /// Logs in a user with the given email and password.
+  /// Returns the [User] if successful, otherwise throws an error.
+  Future<User?> login(String email, String password) async {
     try {
-      return await _auth.signInWithEmailAndPassword(email: email, password: password);
+      UserCredential userCredential = await _auth.signInWithEmailAndPassword(
+        email: email,
+        password: password,
+      );
+      return userCredential.user;
+    } on FirebaseAuthException catch (e) {
+      // Re-throw the exception to be handled by the controller.
+      throw _handleAuthException(e);
     } catch (e) {
-      print("Erro no login: $e");
-      return null;
+      throw 'An unexpected error occurred. Please try again.';
     }
   }
 
-  // Cadastro com e-mail e senha
-  Future<UserCredential?> createUserWithEmailAndPassword(String email, String password) async {
+  /// Registers a new user with the given email and password.
+  /// Returns the [User] if successful, otherwise throws an error.
+  Future<User?> register(String email, String password) async {
     try {
-      return await _auth.createUserWithEmailAndPassword(email: email, password: password);
+      UserCredential userCredential = await _auth.createUserWithEmailAndPassword(
+        email: email,
+        password: password,
+      );
+      return userCredential.user;
+    } on FirebaseAuthException catch (e) {
+      // Re-throw the exception to be handled by the controller.
+      throw _handleAuthException(e);
     } catch (e) {
-      print("Erro no cadastro: $e");
-      return null;
+      throw 'An unexpected error occurred. Please try again.';
     }
   }
 
-  // Logout
-  Future<void> signOut() async {
+  /// Logs out the current user.
+  Future<void> logout() async {
     await _auth.signOut();
+  }
+
+  /// Handles different FirebaseAuthException codes and returns a user-friendly message.
+  String _handleAuthException(FirebaseAuthException e) {
+    switch (e.code) {
+      case 'weak-password':
+        return 'The password provided is too weak.';
+      case 'email-already-in-use':
+        return 'An account already exists for that email.';
+      case 'user-not-found':
+        return 'No user found for that email.';
+      case 'wrong-password':
+        return 'Wrong password provided for that user.';
+      case 'invalid-email':
+        return 'The email address is not valid.';
+      default:
+        return 'Authentication failed. Please try again.';
+    }
   }
 }

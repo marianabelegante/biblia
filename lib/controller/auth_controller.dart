@@ -1,86 +1,89 @@
 import 'package:flutter/material.dart';
-import 'package:get/get.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import '../service/auth_service.dart';
+import '../app_routes.dart';
 
-class AuthController extends GetxController {
+class AuthController {
   final AuthService _authService = AuthService();
-  final Rx<User?> user = Rx<User?>(null);
-  var isLoading = false.obs;
+  final BuildContext context;
 
-  final emailController = TextEditingController();
-  final passwordController = TextEditingController();
+  AuthController(this.context);
 
-  @override
-  void onInit() {
-    super.onInit();
-    // Binda o stream de autenticação à variável reativa 'user'
-    user.bindStream(_authService.authStateChanges);
-    // Redireciona o usuário com base no estado de autenticação
-    ever(user, _setInitialScreen);
-  }
-
-  _setInitialScreen(User? user) {
-    if (user == null) {
-      Get.offAllNamed('/login');
-    } else {
-      Get.offAllNamed('/bible');
+  /// Handles the login process.
+  Future<void> handleLogin(String email, String password) async {
+    // Basic validation
+    if (email.isEmpty || password.isEmpty) {
+      _showErrorSnackbar('Please fill in all fields.');
+      return;
     }
-  }
 
-  void login() async {
-    isLoading.value = true;
+    _showLoadingDialog();
+
     try {
-      final userCredential = await _authService.signInWithEmailAndPassword(
-        emailController.text.trim(),
-        passwordController.text.trim(),
-      );
-      if (userCredential != null) {
-        Get.offAllNamed('/bible');
-      } else {
-        Get.snackbar(
-          'Erro de Login',
-          'E-mail ou senha inválidos.',
-          backgroundColor: Colors.red,
-          colorText: Colors.white,
-        );
+      final user = await _authService.login(email, password);
+      _hideLoadingDialog();
+
+      if (user != null) {
+        // Navigate to the home screen on successful login
+        Navigator.of(context).pushReplacementNamed(AppRoutes.home);
       }
-    } finally {
-      isLoading.value = false;
+    } catch (e) {
+      _hideLoadingDialog();
+      _showErrorSnackbar(e.toString());
     }
   }
 
-  void register() async {
-    isLoading.value = true;
+  /// Handles the registration process.
+  Future<void> handleRegister(String email, String password, String confirmPassword) async {
+    // Basic validation
+    if (email.isEmpty || password.isEmpty || confirmPassword.isEmpty) {
+      _showErrorSnackbar('Please fill in all fields.');
+      return;
+    }
+
+    if (password != confirmPassword) {
+      _showErrorSnackbar('Passwords do not match.');
+      return;
+    }
+
+    _showLoadingDialog();
+
     try {
-      final userCredential = await _authService.createUserWithEmailAndPassword(
-        emailController.text.trim(),
-        passwordController.text.trim(),
-      );
-      if (userCredential != null) {
-        Get.offAllNamed('/bible');
-      } else {
-        Get.snackbar(
-          'Erro de Cadastro',
-          'Não foi possível criar a conta. Tente novamente.',
-          backgroundColor: Colors.red,
-          colorText: Colors.white,
-        );
+      final user = await _authService.register(email, password);
+      _hideLoadingDialog();
+
+      if (user != null) {
+        // Navigate to the home screen on successful registration
+        Navigator.of(context).pushReplacementNamed(AppRoutes.home);
       }
-    } finally {
-      isLoading.value = false;
+    } catch (e) {
+      _hideLoadingDialog();
+      _showErrorSnackbar(e.toString());
     }
   }
 
-  void logout() async {
-    await _authService.signOut();
-    Get.offAllNamed('/login');
+  /// Shows a loading dialog.
+  void _showLoadingDialog() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return const Center(child: CircularProgressIndicator());
+      },
+    );
   }
-  
-  @override
-  void onClose() {
-    emailController.dispose();
-    passwordController.dispose();
-    super.onClose();
+
+  /// Hides the loading dialog.
+  void _hideLoadingDialog() {
+    Navigator.of(context).pop();
+  }
+
+  /// Shows an error message in a SnackBar.
+  void _showErrorSnackbar(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Colors.redAccent,
+      ),
+    );
   }
 }

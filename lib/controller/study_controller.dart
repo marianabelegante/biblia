@@ -1,0 +1,83 @@
+import 'package:flutter/material.dart';
+import '../model/study_model.dart';
+import '../service/study_service.dart';
+import '../view/study_view.dart';
+
+class StudyController {
+  final StudyService _studyService = StudyService();
+  bool _isLoading = false;
+
+  void _showLoadingDialog(BuildContext context, String message) {
+    _isLoading = true;
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        content: Row(
+          children: [
+            const CircularProgressIndicator(),
+            const SizedBox(width: 20),
+            Text(message),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _hideLoadingDialog(BuildContext context) {
+    if (_isLoading) {
+      Navigator.of(context).pop();
+      _isLoading = false;
+    }
+  }
+
+  void _showFeedbackSnackbar(BuildContext context, String message, {bool isError = false}) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: isError ? Colors.redAccent : Colors.green,
+      ),
+    );
+  }
+
+  /// Handles the generation of a new study.
+  Future<void> handleGenerateStudy(BuildContext context, String fullVerseText, String verseReference) async {
+    _showLoadingDialog(context, 'Gerando estudo...');
+    try {
+      final studyText = await _studyService.generateStudy(fullVerseText);
+      _hideLoadingDialog(context);
+      
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => StudyView(
+            verseReference: verseReference,
+            studyText: studyText,
+          ),
+        ),
+      );
+    } catch (e) {
+      _hideLoadingDialog(context);
+      _showFeedbackSnackbar(context, e.toString(), isError: true);
+    }
+  }
+
+  /// Handles saving the study to Firestore.
+  Future<void> handleSaveStudy(BuildContext context, String verseReference, String studyText) async {
+    final study = Study(
+      verse: verseReference,
+      studyText: studyText,
+      createdAt: DateTime.now(),
+    );
+
+    _showLoadingDialog(context, 'Salvando estudo...');
+    try {
+      await _studyService.saveStudy(study);
+      _hideLoadingDialog(context);
+      _showFeedbackSnackbar(context, 'Estudo salvo com sucesso!');
+    } catch (e) {
+      _hideLoadingDialog(context);
+      _showFeedbackSnackbar(context, e.toString(), isError: true);
+    }
+  }
+}

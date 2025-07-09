@@ -1,83 +1,87 @@
 import 'package:flutter/material.dart';
-import 'package:get/get.dart';
-import '../model/bible_model.dart';
+import '../model/verse_model.dart';
 import '../service/bible_service.dart';
+import '../view/chapter_view.dart';
+import '../view/verse_view.dart';
 
-class BibleController extends GetxController {
+class BibleController {
   final BibleService _bibleService = BibleService();
-  final TextEditingController searchController = TextEditingController();
+  bool isLoading = false;
 
-  var books = <Book>[].obs;
-  var filteredBooks = <Book>[].obs;
-  var verses = <Verse>[].obs;
-  var isLoading = true.obs;
-  var selectedBook = Rx<Book?>(null);
-  var selectedChapter = Rx<int?>(null);
-
-  @override
-  void onInit() {
-    super.onInit();
-    fetchBooks();
-    searchController.addListener(() {
-      filterBooks(searchController.text);
-    });
+  /// Shows a loading dialog.
+  void _showLoadingDialog(BuildContext context) {
+    isLoading = true;
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return const Center(child: CircularProgressIndicator());
+      },
+    );
   }
 
-  @override
-  void onClose() {
-    searchController.dispose();
-    super.onClose();
+  /// Hides the loading dialog.
+  void _hideLoadingDialog(BuildContext context) {
+    if (isLoading) {
+      // Check if the navigator can be popped.
+      if(Navigator.canPop(context)) {
+          Navigator.of(context).pop();
+      }
+      isLoading = false;
+    }
   }
 
-  void fetchBooks() async {
+  /// Shows an error message in a SnackBar.
+  void _showErrorSnackbar(BuildContext context, String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Colors.redAccent,
+      ),
+    );
+  }
+
+  /// Navigates to the chapter selection view.
+  void navigateToChapterView(BuildContext context, String bookName) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => ChapterView(bookName: bookName),
+      ),
+    );
+  }
+
+  /// Fetches verses based on a string reference and navigates to the results.
+  Future<void> buscarPorReferencia(BuildContext context, String reference) async {
+    if (reference.isEmpty) {
+      _showErrorSnackbar(context, 'O campo de busca não pode estar vazio.');
+      return;
+    }
+    
+    // When coming from ChapterView, a dialog might already be open from a previous search.
+    // Ensure no loading dialog is active before showing a new one.
+    if(isLoading) _hideLoadingDialog(context);
+
+    _showLoadingDialog(context);
+
     try {
-      isLoading.value = true;
-      var fetchedBooks = await _bibleService.getBooks();
-      books.assignAll(fetchedBooks);
-      filteredBooks.assignAll(fetchedBooks);
+      final verses = await _bibleService.getVerses(reference);
+      _hideLoadingDialog(context);
+      
+      // Navigate to the VersesView screen with the result
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => VersesView(
+            // Use the reference passed to the function for the title
+            reference: reference.trim(),
+            verses: verses,
+          ),
+        ),
+      );
     } catch (e) {
-      Get.snackbar('Erro', 'Não foi possível carregar os livros.');
-      print(e);
-    } finally {
-      isLoading.value = false;
+      _hideLoadingDialog(context);
+      _showErrorSnackbar(context, e.toString());
     }
-  }
-
-  void filterBooks(String query) {
-    if (query.isEmpty) {
-      filteredBooks.assignAll(books);
-    } else {
-      filteredBooks.assignAll(books
-          .where((book) => book.name.toLowerCase().contains(query.toLowerCase()))
-          .toList());
-    }
-  }
-
-  void selectBook(Book book) {
-    selectedBook.value = book;
-    selectedChapter.value = null; // Reseta o capítulo ao selecionar um novo livro
-    verses.clear();
-  }
-
-  void fetchVerses(String bookName, int chapter) async {
-    try {
-      isLoading.value = true;
-      selectedChapter.value = chapter;
-      // A API pode requerer abreviações ou nomes específicos.
-      // Aqui usamos o nome do livro, que pode precisar de ajuste.
-      var fetchedVerses = await _bibleService.getVerses(bookName, chapter);
-      verses.assignAll(fetchedVerses);
-    } catch (e) {
-      Get.snackbar('Erro', 'Não foi possível carregar o capítulo.');
-      print(e);
-    } finally {
-      isLoading.value = false;
-    }
-  }
-
-  void resetToBookSelection() {
-    selectedBook.value = null;
-    selectedChapter.value = null;
-    verses.clear();
   }
 }
