@@ -73,3 +73,30 @@ Execute com:
 # 👩‍💻 Desenvolvido por
 
 - Mariana Belegante
+
+## 🖼️ Telas do App
+
+### 🔐 Tela de Login
+<img src="assets/images/login.jpeg" width="300"/>
+
+---
+
+### 📚 Tela Inicial — Livros da Bíblia
+<img src="assets/images/home.jpeg" width="300"/>
+
+---
+
+### 📖 Capítulo com Versículos
+<img src="assets/images/leitura_cap.jpeg" width="300"/>
+
+---
+
+### 🧠 Estudo Gerado com IA
+<img src="assets/images/estudo.jpeg" width="300"/>
+
+---
+
+### 💾 Biblioteca de Estudos Salvos
+<img src="assets/images/estudo_salvo.jpeg" width="300"/>
+
+---
